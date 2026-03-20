@@ -1,0 +1,4 @@
+# Spotify Song Recommendation Project Configuration
+
+dataset_path: "dataset/data"
+processed_data_path: "processed_data/playlist_tracks.csv"

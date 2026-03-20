@@ -1,3 +1,5 @@
+# YAML config support
+pyyaml
 #notebook 
 ipykernel
 pandas
