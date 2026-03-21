@@ -1,4 +1,5 @@
 import pandas as pd
+import pickle
 from src.encode_tracks import encode_tracks, build_matrix
 from src.knn_utils import train_knn
 from src.utils.logging import get_logger
@@ -29,7 +30,6 @@ knn_model = train_knn(X.T, n_neighbors=10)
 
 
 # 4. Save artifacts (using pickle)
-import pickle
 artifacts = {
     "knn_model": knn_model,
     "track_to_idx": track_to_idx,

@@ -1999,3 +1999,6 @@
 2026-03-21 09:01:05 INFO [extract_tracks] Saved extracted tracks to processed_data/mpd.slice.302000-302999.csv (rows: 66847)
 2026-03-21 09:01:05 INFO [benchmark] mpd.slice.302000-302999.json processed in 0.229s
 2026-03-21 09:01:05 INFO [benchmark] Processed 1000 files | average time per file = 0.232s
+2026-03-21 09:11:25 INFO [extract_tracks] Saved extracted tracks to /private/var/folders/gz/zjfnlbpd6393dctbf4vzjdc00000gn/T/pytest-of-Patron/pytest-13/test_extract_tracks_basic0/out.csv (rows: 2)
+2026-03-21 09:11:25 INFO [extract_tracks] Saved extracted tracks to /private/var/folders/gz/zjfnlbpd6393dctbf4vzjdc00000gn/T/pytest-of-Patron/pytest-13/test_extract_tracks_missing_fi0/out2.csv (rows: 1)
+2026-03-21 09:11:25 ERROR [extract_tracks] Failed to read or parse file /private/var/folders/gz/zjfnlbpd6393dctbf4vzjdc00000gn/T/pytest-of-Patron/pytest-13/test_extract_tracks_file_not_f0/doesnotexist.json: [Errno 2] No such file or directory: '/private/var/folders/gz/zjfnlbpd6393dctbf4vzjdc00000gn/T/pytest-of-Patron/pytest-13/test_extract_tracks_file_not_f0/doesnotexist.json'
