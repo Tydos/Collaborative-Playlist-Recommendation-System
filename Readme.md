@@ -8,6 +8,8 @@ This project builds a playlist-based song recommendation system using the Spotif
 
 The initial ETL approach loaded JSON slices into memory and wrote flattened CSV output, which was simple but slow at scale. The current ETL in [src/track_etl.py](src/track_etl.py) uses generators for streaming extraction, applies lightweight track normalization, and writes Parquet outputs for better I/O performance. The pipeline was then parallelized in [src/train.py](src/train.py) using `ProcessPoolExecutor` on MacBook M3 cores, reducing end-to-end ETL time from about 277 seconds to about 50 seconds while processing roughly 6 million tracks across 1 million playlists.
 
+Additionally, using Apache Spark for the ETL step (instead of pandas/ProcessPoolExecutor) saved about 5 more seconds on the same workload
+
 ## Dataset Description
 
 The dataset is stored as MPD JSON slices under [dataset/data](dataset/data), with each slice containing approximately 1000 playlists, for example [dataset/data/mpd.slice.0-999.json](dataset/data/mpd.slice.0-999.json). The project primarily uses playlist and track metadata fields such as `pid`, `track_uri`, `track_name`, `artist_name`, `album_name`, and `album_uri`.
@@ -40,9 +42,9 @@ Cleaning includes safe JSON parsing, field selection, default handling for missi
 
 | Function | File | Purpose |
 |---|---|---|
-| `extract_tracks(file_path, limit)` | [src/track_etl.py](src/track_etl.py) | Streams track rows from JSON slices. |
+| `extract_tracks(file_path)` | [src/track_etl.py](src/track_etl.py) | Streams track rows from JSON slices. |
 | `transform_track(track)` | [src/track_etl.py](src/track_etl.py) | Normalizes fields (for example URI prefixes). |
-| `load_tracks(file_path, output_dir, limit)` | [src/track_etl.py](src/track_etl.py) | Writes transformed rows to parquet per slice. |
+| `load_tracks(file_path, output_dir)` | [src/track_etl.py](src/track_etl.py) | Writes transformed rows to parquet per slice. |
 | `load_config()` | [src/utils/config.py](src/utils/config.py) | Loads project config from [config.yaml](config.yaml). |
 | `get_logger(name)` | [src/utils/logging.py](src/utils/logging.py) | Provides centralized logging. |
 | `benchmark(func, *args, **kwargs)` | [src/utils/benchmark.py](src/utils/benchmark.py) | Measures ETL/runtime performance. |

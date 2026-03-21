@@ -1,3 +1,74 @@
 2026-03-21 10:37:29 ERROR [benchmark] Benchmark target failed: slice indices must be integers or None or have an __index__ method
 2026-03-21 10:38:27 ERROR [benchmark] Benchmark target failed: slice indices must be integers or None or have an __index__ method
 2026-03-21 11:22:36 ERROR [benchmark] Benchmark target failed: Cannot save file into a non-existent directory: 'processed_data/playlist_tracks.csv'
+2026-03-21 13:19:53 ERROR [benchmark] Benchmark target failed: Error 61 connecting to localhost:6379. Connection refused.
+2026-03-21 13:21:18 ERROR [benchmark] Benchmark target failed: Error 61 connecting to localhost:4543. Connection refused.
+2026-03-21 13:28:19 ERROR [benchmark] Benchmark target failed: cannot pickle '_thread.lock' object
+2026-03-21 14:15:00 ERROR [benchmark] Benchmark target failed: 'NoneType' object is not callable
+2026-03-21 14:20:19 ERROR [benchmark] Benchmark target failed: 'NoneType' object is not callable
+2026-03-21 14:45:32 ERROR [benchmark] Benchmark target failed: [FIELD_NOT_FOUND] No such struct field `artist_uri` in `track_uri`, `artist_name`, `track_name`, `album_name`, `album_uri`. SQLSTATE: 42704
+2026-03-21 14:51:10 ERROR [benchmark] Benchmark target failed: [UNRESOLVED_COLUMN.WITH_SUGGESTION] A column, variable, or function parameter with name `album_uri` cannot be resolved. Did you mean one of the following? [`track_uri`]. SQLSTATE: 42703;
+'Project [track_uri#9, 'regexp_replace('album_uri, spotify:album:, ) AS album_uri#10]
++- Project [regexp_replace(track_uri#7, spotify:track:, , 1) AS track_uri#9]
+   +- Project [track#6.track_uri AS track_uri#7]
+      +- Project [track#6]
+         +- Generate explode(playlist#2.tracks), false, [track#6]
+            +- Project [playlist#2]
+               +- Generate explode(playlists#0), false, [playlist#2]
+                  +- Relation [playlists#0] json
+
+2026-03-21 15:02:10 ERROR [benchmark] Benchmark target failed: [Errno 61] Connection refused
+2026-03-21 15:24:55 ERROR [benchmark] Benchmark target failed: [FIELD_NOT_FOUND] No such struct field `pid` in `tracks`. SQLSTATE: 42704
+2026-03-21 15:25:53 ERROR [benchmark] Benchmark target failed: [FIELD_NOT_FOUND] No such struct field `artist_name` in `track_uri`, `artist_uri`, `track_name`, `album_name`, `album_uri`. SQLSTATE: 42704
+2026-03-21 15:47:15 ERROR [benchmark] Benchmark target failed: An error occurred while calling o122.collectToPython.
+: java.util.concurrent.ExecutionException: Boxed Exception
+	at scala.concurrent.impl.Promise$.scala$concurrent$impl$Promise$$resolve(Promise.scala:99)
+	at scala.concurrent.impl.Promise$DefaultPromise.tryComplete(Promise.scala:288)
+	at scala.concurrent.Promise.complete(Promise.scala:57)
+	at scala.concurrent.Promise.complete$(Promise.scala:56)
+	at scala.concurrent.impl.Promise$DefaultPromise.complete(Promise.scala:104)
+	at scala.concurrent.Promise.failure(Promise.scala:109)
+	at scala.concurrent.Promise.failure$(Promise.scala:109)
+	at scala.concurrent.impl.Promise$DefaultPromise.failure(Promise.scala:104)
+	at org.apache.spark.sql.execution.adaptive.ResultQueryStageExec.$anonfun$doMaterialize$2(QueryStageExec.scala:336)
+	at java.base/java.util.concurrent.CompletableFuture.uniWhenComplete(CompletableFuture.java:863)
+	at java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(CompletableFuture.java:841)
+	at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:510)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1773)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+	at scala.collection.mutable.ArrayBuffer$.scala$collection$mutable$ArrayBuffer$$ensureSize(ArrayBuffer.scala:338)
+	at scala.collection.mutable.ArrayBuffer.ensureSize(ArrayBuffer.scala:68)
+	at scala.collection.mutable.ArrayBuffer.addOne(ArrayBuffer.scala:142)
+	at scala.collection.mutable.ArrayBuffer.addOne(ArrayBuffer.scala:41)
+	at scala.collection.mutable.Growable.$plus$eq(Growable.scala:36)
+	at scala.collection.mutable.Growable.$plus$eq$(Growable.scala:36)
+	at scala.collection.mutable.AbstractBuffer.$plus$eq(Buffer.scala:318)
+	at org.apache.spark.sql.execution.SparkPlan.$anonfun$executeCollect$2(SparkPlan.scala:463)
+	at org.apache.spark.sql.execution.SparkPlan$$Lambda$4774/0x000000d00234c998.apply(Unknown Source)
+	at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:630)
+	at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:628)
+	at org.apache.spark.util.NextIterator.foreach(NextIterator.scala:21)
+	at org.apache.spark.sql.execution.SparkPlan.$anonfun$executeCollect$1(SparkPlan.scala:463)
+	at org.apache.spark.sql.execution.SparkPlan.$anonfun$executeCollect$1$adapted(SparkPlan.scala:462)
+	at org.apache.spark.sql.execution.SparkPlan$$Lambda$4773/0x000000d00234bbd8.apply(Unknown Source)
+	at scala.collection.ArrayOps$.foreach$extension(ArrayOps.scala:1324)
+	at org.apache.spark.sql.execution.SparkPlan.executeCollect(SparkPlan.scala:462)
+	at org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec.$anonfun$executeCollect$1(AdaptiveSparkPlanExec.scala:396)
+	at org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanExec$$Lambda$4106/0x000000d0021c9160.apply(Unknown Source)
+	at org.apache.spark.sql.execution.adaptive.ResultQueryStageExec.$anonfun$doMaterialize$1(QueryStageExec.scala:328)
+	at org.apache.spark.sql.execution.adaptive.ResultQueryStageExec$$Lambda$4410/0x000000d00228ec90.apply(Unknown Source)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withThreadLocalCaptured$4(SQLExecution.scala:335)
+	at org.apache.spark.sql.execution.SQLExecution$$$Lambda$4153/0x000000d0021d97b0.apply(Unknown Source)
+	at org.apache.spark.sql.execution.SQLExecution$.withSessionTagsApplied(SQLExecution.scala:285)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withThreadLocalCaptured$3(SQLExecution.scala:333)
+	at org.apache.spark.sql.execution.SQLExecution$$$Lambda$4152/0x000000d0021d9120.apply(Unknown Source)
+	at org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)
+	at org.apache.spark.sql.execution.SQLExecution$.$anonfun$withThreadLocalCaptured$2(SQLExecution.scala:329)
+	at org.apache.spark.sql.execution.SQLExecution$$$Lambda$4150/0x000000d0021d8ef8.get(Unknown Source)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+

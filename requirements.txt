@@ -21,3 +21,6 @@ scikit-learn
 fastapi
 uvicorn 
 httpx
+
+#hash functions
+xxhash

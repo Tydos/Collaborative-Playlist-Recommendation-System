@@ -1,6 +1,10 @@
 # Spotify Song Recommendation Project Configuration
 
+#data paths
 dataset_path: "dataset/data" 
 processed_data_path: "processed_data" 
-limit: null  
-chunk_size: 1000  
+
+#spark config
+spark_driver_memory: "4g"
+spark_shuffle_partitions: 8
+spark_parquet_block_size: 33554432  # 32 MB

@@ -11,7 +11,7 @@ def _write_json(path: Path, payload: dict) -> None:
         json.dump(payload, f)
 
 
-def test_extract_tracks_respects_limit_and_fields(tmp_path):
+def test_extract_tracks_outputs_expected_fields(tmp_path):
     file_path = tmp_path / "slice.json"
     _write_json(
         file_path,
@@ -43,14 +43,16 @@ def test_extract_tracks_respects_limit_and_fields(tmp_path):
         },
     )
 
-    rows = list(extract_tracks(str(file_path), limit=1))
-    assert len(rows) == 1
+    rows = list(extract_tracks(str(file_path)))
+    assert len(rows) == 2
     assert rows[0]["playlist_id"] == 0
     assert rows[0]["track_uri"] == "spotify:track:111"
     assert rows[0]["artist_name"] == "Artist A"
     assert rows[0]["track_name"] == "Song A"
     assert rows[0]["album_name"] == "Album A"
     assert rows[0]["album_uri"] == "spotify:album:aaa"
+    assert rows[1]["playlist_id"] == 1
+    assert rows[1]["track_uri"] == "spotify:track:222"
 
 
 def test_transform_track_strips_prefixes_and_handles_empty():
@@ -119,7 +121,7 @@ def test_load_tracks_creates_dir_and_writes_parquet(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pd.DataFrame, "to_parquet", fake_to_parquet)
 
-    count = load_tracks(str(file_path), str(out_dir), limit=None)
+    count = load_tracks(str(file_path), str(out_dir))
 
     assert count == 2
     assert out_dir.exists()
@@ -140,5 +142,5 @@ def test_load_tracks_returns_zero_when_no_tracks(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pd.DataFrame, "to_parquet", fail_if_called)
 
-    count = load_tracks(str(file_path), str(out_dir), limit=None)
+    count = load_tracks(str(file_path), str(out_dir))
     assert count == 0
