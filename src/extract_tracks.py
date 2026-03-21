@@ -1,40 +1,60 @@
-from typing import List, Any
+from typing import Any
+import os
 import pandas as pd
-import logging
 import json
-import yaml
-from pathlib import Path
+from src.utils.logging import get_logger
+from src.utils.config import load_config
 
-# Load config
-with open(Path(__file__).parent.parent / "config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-DATASET_PATH = config["dataset_path"]
-PROCESSED_DATA_PATH = config["processed_data_path"]
+logger = get_logger("extract_tracks")
+config = load_config()
+PROCESSED_DATA_PATH = config.get("processed_data_path", "processed_tracks.csv")
+DATASET_PATH = config.get("dataset_path", "dataset/data")
 
-#from the json files, save the playlist and trackid to a dataframe, and return the status
-def read_slices(file_path):
+def extract_tracks(file_path: str, processed_data_path: str) -> bool:
+    """
+    Extracts track and playlist information from the playlists in a JSON file and saves to CSV.
+    Extracted columns: playlist_id, track_uri (without 'spotify:track:'), num_followers, artist_name, track_name, album_name, album_uri.
+    Returns True if successful, False otherwise.
+    """
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return data
+        playlists = data["playlists"]
     except Exception as e:
-        raise FileNotFoundError(f"Wrong File Path: {e}")
+        logger.error(f"Failed to read or parse file {file_path}: {e}")
+        raise
     
-def track_gen(jsondata: Any):
-    for i in range(1000):
-        logging.debug(f"reading playlist {i}")
-        for track in jsondata['playlists'][i]['tracks']:
-            yield [i, track['track_uri'][14:]]
+    rows = [
+        [
+            i,
+            track.get("track_uri", ""),
+            playlist.get("num_followers", 0),
+            track.get("artist_name", ""),
+            track.get("track_name", ""),
+            track.get("album_name", ""),
+            track.get("album_uri", "")
+        ]
+        for i, playlist in enumerate(playlists[:1000])
+        for track in playlist.get("tracks", [])
+    ]
 
-def extract_tracks(jsondata: Any) -> bool:
-    status = False
-    if "playlists" not in jsondata.keys():
-        raise KeyError("Key not found")
     try:
-        df = pd.DataFrame(track_gen(jsondata), columns=["playlist_id", "track_uri"])
-        df.to_csv(PROCESSED_DATA_PATH, index=False)
-        status = True
-        return status
+        df = pd.DataFrame(rows, columns=["playlist_id", "track_uri", "num_followers", "artist_name", "track_name", "album_name", "album_uri"])
+        # Ensure output directory exists
+        output_dir = os.path.dirname(processed_data_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        df.to_csv(processed_data_path, index=False)
+        logger.info(f"Saved extracted tracks to {processed_data_path} (rows: {len(df)})")
+        return True
     except Exception as e:
-        logging.error(f"extract_tracks failed {e}")
-        return status
+        logger.error(f"extract_tracks failed: {e}")
+        return False
+    
+if __name__ == "__main__":
+    file_path = f"{DATASET_PATH}/mpd.slice.0-999.json"
+    success = extract_tracks(file_path, processed_data_path=PROCESSED_DATA_PATH)
+    if success:
+        logger.info("Track extraction completed successfully.")
+    else:
+        logger.error("Track extraction failed.")

@@ -1,5 +1,12 @@
 # YAML config support
 pyyaml
+
+#linter
+ruff
+pytest
+
+#streaming
+ijson
 #notebook 
 ipykernel
 pandas

@@ -1,17 +1,22 @@
 from sklearn.neighbors import NearestNeighbors
-import numpy as np
 from collections import defaultdict
+from src.utils.logging import get_logger
+
+logger = get_logger("knn_utils")
 
 def train_knn(X_items, n_neighbors=5, metric='cosine'):
+    logger.info(f"Training KNN model with n_neighbors={n_neighbors}, metric={metric}...")
     knn_model = NearestNeighbors(
         n_neighbors=n_neighbors,
         metric=metric,
         algorithm='brute'
     )
     knn_model.fit(X_items)
+    logger.info("KNN model training complete.")
     return knn_model
 
 def recommend_tracks(seed_tracks, X, knn_model, track_to_idx, idx_to_track, track_to_details, top_k=10):
+    logger.info(f"Generating recommendations for {len(seed_tracks)} seed tracks...")
     neighbor_scores = defaultdict(float)
     for track_uri in seed_tracks:
         if track_uri not in track_to_idx:
@@ -37,34 +42,6 @@ def recommend_tracks(seed_tracks, X, knn_model, track_to_idx, idx_to_track, trac
             "track_artist": track_artist,
             "score": score
         })
+    logger.info(f"Generated {len(recommended_tracks)} recommendations.")
     return recommended_tracks
 
-def precision_at_k(recommended, ground_truth, k=10):
-    top_k = recommended[:k]
-    hits = sum([1 for t in top_k if t in ground_truth])
-    return hits / k
-
-def recall_at_k(recommended, ground_truth, k=10):
-    top_k = recommended[:k]
-    hits = sum([1 for t in top_k if t in ground_truth])
-    return hits / len(ground_truth) if len(ground_truth) > 0 else 0.0
-
-def ndcg_at_k(recommended, ground_truth, k=10):
-    dcg = 0.0
-    for i, t in enumerate(recommended[:k]):
-        if t in ground_truth:
-            dcg += 1 / np.log2(i + 2)
-    ideal_hits = min(len(ground_truth), k)
-    idcg = sum([1 / np.log2(i + 2) for i in range(ideal_hits)])
-    return dcg / idcg if idcg > 0 else 0.0
-
-def hit_rate_at_k(recommended, ground_truth, k=10):
-    top_k = recommended[:k]
-    return 1.0 if any(t in ground_truth for t in top_k) else 0.0
-
-def mrr_at_k(recommended, ground_truth, k=10):
-    top_k = recommended[:k]
-    for i, t in enumerate(top_k):
-        if t in ground_truth:
-            return 1.0 / (i + 1)
-    return 0.0

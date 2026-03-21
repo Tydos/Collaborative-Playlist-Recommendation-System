@@ -1,56 +1,133 @@
+# Spotify Song Recommendation Project
 
-## Spotify Collaborative Playlist Recommendation System
+## Project Description
 
-Using the Spotify million playlists dataset, the goal is to build a good song recommendation model that can buiid music playlists of the same vibe. 
+This project builds a playlist-based song recommender using the Spotify Million Playlist Dataset (MPD).
 
-### Dataset
+Current approach:
+- extract playlist-track data from raw JSON
+- build a playlist-track interaction matrix
+- train an item-based KNN model
+- generate track recommendations
 
-Spotify Million Playlists [paper](https://dl.acm.org/doi/abs/10.1145/3240323.3240342):
+## Dataset Description
 
-*Ching-Wei Chen, Paul Lamere, Markus Schedl, and Hamed Zamani. Recsys Challenge 2018: Automatic Music Playlist Continuation. In Proceedings of the 12th ACM Conference on Recommender Systems (RecSys ’18), 2018.*
+The dataset is the Spotify MPD, stored as many JSON slices in [dataset/data](dataset/data).
 
+Each slice file contains about 1000 playlists, for example:
+- [dataset/data/mpd.slice.0-999.json](dataset/data/mpd.slice.0-999.json)
 
-### Preliminary Results
+Typical raw fields used by this project:
+- playlist-level: `pid`, `num_followers`
+- track-level: `track_uri`, `track_name`, `artist_name`, `album_name`, `album_uri`
 
-| Metric                  | Value  |
-|-------------------------|--------|
-| Average Precision@10    | 0.086  |
-| Average Recall@10       | 0.861  |
-| Average NDCG@10         | 0.836  |
-| Average Hit Rate@10     | 0.861  |
-| Average MRR@10          | 0.828  |
-| Coverage                | 0.191  |
+Example shape (simplified):
 
-*These results were obtained using a simple K-Nearest Neighbours model on 1000 playlists without any hyperparameter tuning.*
+```json
+{
+	"playlists": [
+		{
+			"pid": 0,
+			"num_followers": 1,
+			"tracks": [
+				{
+					"track_uri": "spotify:track:...",
+					"track_name": "...",
+					"artist_name": "...",
+					"album_name": "...",
+					"album_uri": "spotify:album:..."
+				}
+			]
+		}
+	]
+}
+```
 
-## Code-to-Pipeline Mapping
+## Data Cleaning / Preparation
 
-| Pipeline Step                | Script/Module                        | Description                                      |
-|------------------------------|--------------------------------------|--------------------------------------------------|
-| Data Ingestion               | src/read_data.py                     | Loads and lists JSON playlist files               |
-| Data Extraction              | src/extract_tracks.py                | Extracts (playlist_id, track_uri) pairs           |
-| Track Encoding & Matrix      | src/encode_tracks.py                 | Encodes tracks, builds interaction matrix         |
-| Model Training (KNN)         | src/knn_utils.py                     | Trains KNN model on item (track) matrix          |
-| Recommendation Generation    | src/knn_utils.py                     | Generates recommendations using KNN               |
-| Evaluation                   | src/knn_utils.py                     | Computes metrics (Precision@K, Recall@K, etc.)    |
-| Pipeline Orchestration       | src/main.py, notebooks/knn.ipynb     | Runs the full workflow, demo and experimentation  |
+Cleaning and preparation currently includes:
+- reading raw JSON safely
+- selecting required playlist and track fields
+- filling missing optional values with defaults (for example empty strings or `0`)
+- writing extracted rows to CSV
+- auto-creating output folder when it does not exist
 
-## Technical Pipeline Overview
+Output columns in extracted CSV:
+- `playlist_id`
+- `track_uri`
+- `num_followers`
+- `artist_name`
+- `track_name`
+- `album_name`
+- `album_uri`
 
-1. **Data Ingestion:**
-	- Load the Spotify Million Playlist Dataset (MPD) from JSON files. Each file contains 1,000 playlists, with metadata and track lists.
+## Functions and Their Uses
 
-2. **Data Extraction:**
-	- Parse each playlist to extract (playlist_id, track_uri) pairs. Store these pairs in a structured format (CSV or Parquet) for efficient downstream processing.
+### Data Extraction
+- `extract_tracks(file_path, processed_data_path)` in [src/extract_tracks.py](src/extract_tracks.py)
+	- Reads one JSON slice and writes cleaned playlist-track rows to CSV.
 
-3. **Track Encoding & Matrix Construction:**
-	- Assign a unique integer index to each track URI. Construct a sparse playlist-track interaction matrix, where rows represent playlists and columns represent tracks. Each entry is 1 if the playlist contains the track, 0 otherwise.
+### Data Reading Helpers
+- `list_file_paths(folder_path)` in [src/read_data.py](src/read_data.py)
+	- Lists JSON files in a dataset folder.
+- `read_json_file(file_path)` in [src/read_data.py](src/read_data.py)
+	- Reads one JSON file.
 
-4. **Model Training (KNN):**
-	- Use the item-based (track-based) interaction matrix to fit a K-Nearest Neighbors model (using cosine similarity). This model identifies tracks that frequently co-occur in playlists.
+### Feature Encoding
+- `encode_tracks(interactions)` in [src/encode_tracks.py](src/encode_tracks.py)
+	- Maps track IDs/URIs to numeric indices.
+- `build_matrix(encoded_interactions, track_to_idx)` in [src/encode_tracks.py](src/encode_tracks.py)
+	- Builds sparse playlist-track interaction matrix.
 
-5. **Recommendation Generation:**
-	- For a given set of seed tracks (e.g., from a user's playlist), retrieve the nearest neighbors for each seed track using the trained KNN model. Aggregate and rank candidate tracks by similarity score, excluding tracks already present in the seed set.
+### Model Utilities
+- `train_knn(X_items, n_neighbors, metric)` in [src/knn_utils.py](src/knn_utils.py)
+	- Trains item-based nearest-neighbor model.
+- `recommend_tracks(...)` in [src/knn_utils.py](src/knn_utils.py)
+	- Generates ranked recommendations from seed tracks.
 
-6. **Evaluation:**
-	- Assess recommendation quality using metrics such as Precision@K, Recall@K, NDCG@K, Hit Rate, and MRR, comparing recommended tracks to ground-truth playlist continuations.
+### Utilities
+- `load_config(...)` in [src/utils/config.py](src/utils/config.py)
+	- Loads project config from [config.yaml](config.yaml).
+- `get_logger(name)` in [src/utils/logging.py](src/utils/logging.py)
+	- Standard project logger.
+- `benchmark(func, *args, **kwargs)` in [src/utils/benchmark.py](src/utils/benchmark.py)
+	- Measures extraction runtime per file.
+
+## General Code Running Guidelines
+
+1. Create and activate virtual environment.
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run extraction (single file default):
+
+```bash
+python -m src.extract_tracks
+```
+
+4. Run benchmark on all JSON slices:
+
+```bash
+python -m src.utils.benchmark
+```
+
+5. Train model:
+
+```bash
+python -m src.train
+```
+
+6. Run inference:
+
+```bash
+python -m src.inference
+```
+
+7. Run tests:
+
+```bash
+python -m pytest -q
+```
