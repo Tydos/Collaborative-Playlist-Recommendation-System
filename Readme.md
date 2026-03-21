@@ -2,26 +2,15 @@
 
 ## Project Description
 
-This project builds a playlist-based song recommender using the Spotify Million Playlist Dataset (MPD).
+This project builds a playlist-based song recommendation system using the Spotify Million Playlist Dataset (MPD). The pipeline extracts playlist-track interactions from raw JSON, prepares model-ready data, and supports item-based nearest-neighbor recommendation workflows.
 
-Current approach:
-- extract playlist-track data from raw JSON
-- build a playlist-track interaction matrix
-- train an item-based KNN model
-- generate track recommendations
+## ETL Pipeline (What Changed and Why)
+
+The initial ETL approach loaded JSON slices into memory and wrote flattened CSV output, which was simple but slow at scale. The current ETL in [src/track_etl.py](src/track_etl.py) uses generators for streaming extraction, applies lightweight track normalization, and writes Parquet outputs for better I/O performance. The pipeline was then parallelized in [src/train.py](src/train.py) using `ProcessPoolExecutor` on MacBook M3 cores, reducing end-to-end ETL time from about 277 seconds to about 50 seconds while processing roughly 6 million tracks across 1 million playlists.
 
 ## Dataset Description
 
-The dataset is the Spotify MPD, stored as many JSON slices in [dataset/data](dataset/data).
-
-Each slice file contains about 1000 playlists, for example:
-- [dataset/data/mpd.slice.0-999.json](dataset/data/mpd.slice.0-999.json)
-
-Typical raw fields used by this project:
-- playlist-level: `pid`, `num_followers`
-- track-level: `track_uri`, `track_name`, `artist_name`, `album_name`, `album_uri`
-
-Example shape (simplified):
+The dataset is stored as MPD JSON slices under [dataset/data](dataset/data), with each slice containing approximately 1000 playlists, for example [dataset/data/mpd.slice.0-999.json](dataset/data/mpd.slice.0-999.json). The project primarily uses playlist and track metadata fields such as `pid`, `track_uri`, `track_name`, `artist_name`, `album_name`, and `album_uri`.
 
 ```json
 {
@@ -45,88 +34,56 @@ Example shape (simplified):
 
 ## Data Cleaning / Preparation
 
-Cleaning and preparation currently includes:
-- reading raw JSON safely
-- selecting required playlist and track fields
-- filling missing optional values with defaults (for example empty strings or `0`)
-- writing extracted rows to CSV
-- auto-creating output folder when it does not exist
-
-Output columns in extracted CSV:
-- `playlist_id`
-- `track_uri`
-- `num_followers`
-- `artist_name`
-- `track_name`
-- `album_name`
-- `album_uri`
+Cleaning includes safe JSON parsing, field selection, default handling for missing metadata, URI normalization by stripping Spotify prefixes, and Parquet output writing with automatic output-directory creation. The extracted dataset currently contains `playlist_id`, `track_uri`, `artist_name`, `track_name`, `album_name`, and `album_uri`.
 
 ## Functions and Their Uses
 
-### Data Extraction
-- `extract_tracks(file_path, processed_data_path)` in [src/extract_tracks.py](src/extract_tracks.py)
-	- Reads one JSON slice and writes cleaned playlist-track rows to CSV.
-
-### Data Reading Helpers
-- `list_file_paths(folder_path)` in [src/read_data.py](src/read_data.py)
-	- Lists JSON files in a dataset folder.
-- `read_json_file(file_path)` in [src/read_data.py](src/read_data.py)
-	- Reads one JSON file.
-
-### Feature Encoding
-- `encode_tracks(interactions)` in [src/encode_tracks.py](src/encode_tracks.py)
-	- Maps track IDs/URIs to numeric indices.
-- `build_matrix(encoded_interactions, track_to_idx)` in [src/encode_tracks.py](src/encode_tracks.py)
-	- Builds sparse playlist-track interaction matrix.
-
-### Model Utilities
-- `train_knn(X_items, n_neighbors, metric)` in [src/knn_utils.py](src/knn_utils.py)
-	- Trains item-based nearest-neighbor model.
-- `recommend_tracks(...)` in [src/knn_utils.py](src/knn_utils.py)
-	- Generates ranked recommendations from seed tracks.
-
-### Utilities
-- `load_config(...)` in [src/utils/config.py](src/utils/config.py)
-	- Loads project config from [config.yaml](config.yaml).
-- `get_logger(name)` in [src/utils/logging.py](src/utils/logging.py)
-	- Standard project logger.
-- `benchmark(func, *args, **kwargs)` in [src/utils/benchmark.py](src/utils/benchmark.py)
-	- Measures extraction runtime per file.
+| Function | File | Purpose |
+|---|---|---|
+| `extract_tracks(file_path, limit)` | [src/track_etl.py](src/track_etl.py) | Streams track rows from JSON slices. |
+| `transform_track(track)` | [src/track_etl.py](src/track_etl.py) | Normalizes fields (for example URI prefixes). |
+| `load_tracks(file_path, output_dir, limit)` | [src/track_etl.py](src/track_etl.py) | Writes transformed rows to parquet per slice. |
+| `load_config()` | [src/utils/config.py](src/utils/config.py) | Loads project config from [config.yaml](config.yaml). |
+| `get_logger(name)` | [src/utils/logging.py](src/utils/logging.py) | Provides centralized logging. |
+| `benchmark(func, *args, **kwargs)` | [src/utils/benchmark.py](src/utils/benchmark.py) | Measures ETL/runtime performance. |
+| `encode_tracks(interactions)` | [src/encode_tracks.py](src/encode_tracks.py) | Encodes track IDs for model input. |
+| `build_matrix(encoded_interactions, track_to_idx)` | [src/encode_tracks.py](src/encode_tracks.py) | Builds sparse interaction matrix. |
+| `train_knn(X_items, n_neighbors, metric)` | [src/knn_utils.py](src/knn_utils.py) | Trains item-based KNN model. |
+| `recommend_tracks(...)` | [src/knn_utils.py](src/knn_utils.py) | Produces ranked track recommendations. |
 
 ## General Code Running Guidelines
 
-1. Create and activate virtual environment.
-2. Install dependencies:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run extraction (single file default):
+Run ETL:
 
 ```bash
-python -m src.extract_tracks
+python -m src.track_etl
 ```
 
-4. Run benchmark on all JSON slices:
+Run benchmark:
 
 ```bash
 python -m src.utils.benchmark
 ```
 
-5. Train model:
+Run parallel ETL orchestration:
 
 ```bash
 python -m src.train
 ```
 
-6. Run inference:
+Run inference:
 
 ```bash
 python -m src.inference
 ```
 
-7. Run tests:
+Run tests:
 
 ```bash
 python -m pytest -q

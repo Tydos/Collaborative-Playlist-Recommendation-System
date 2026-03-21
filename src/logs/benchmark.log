@@ -1,0 +1,3 @@
+2026-03-21 10:37:29 ERROR [benchmark] Benchmark target failed: slice indices must be integers or None or have an __index__ method
+2026-03-21 10:38:27 ERROR [benchmark] Benchmark target failed: slice indices must be integers or None or have an __index__ method
+2026-03-21 11:22:36 ERROR [benchmark] Benchmark target failed: Cannot save file into a non-existent directory: 'processed_data/playlist_tracks.csv'

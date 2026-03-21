@@ -1,26 +1,28 @@
 import logging
 from pathlib import Path
 
-def get_logger(name: str = "spotify_recommender") -> logging.Logger:
-    """
-    Returns a logger instance that logs to both console and a central file in log/.
-    Usage: logger = get_logger(__name__)
-    """
+def get_logger(name: str, log_file: str | None = None) -> logging.Logger:
     logger = logging.getLogger(name)
-    if not logger.handlers:
-        
-        # Console handler
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(levelname)s [%(name)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
-        # Central file handler
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s [%(name)s] %(message)s', 
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+
+        # Console Handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+        # File Handler 
         log_dir = Path(__file__).parent.parent / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_dir / "project.log", mode='a')
+        filename = f"{log_file}.log" if log_file else f"{name}.log"
+        
+        file_handler = logging.FileHandler(log_dir / filename, mode='a')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-    logger.setLevel(logging.INFO)
     return logger

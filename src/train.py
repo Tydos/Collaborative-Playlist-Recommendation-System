@@ -1,40 +1,43 @@
-import pandas as pd
-import pickle
-from src.encode_tracks import encode_tracks, build_matrix
-from src.knn_utils import train_knn
+import os
 from src.utils.logging import get_logger
 from src.utils.config import load_config
+from src.track_etl import load_tracks
+from src.utils.benchmark import benchmark
+from concurrent.futures import ProcessPoolExecutor
 
 logger = get_logger("train")
-
-# Load config
 config = load_config()
-PROCESSED_DATA_PATH = config["processed_data_path"]
+DATASET_PATH = config.get("dataset_path", "dataset/data")
+PROCESSED_DATA_PATH = config.get("processed_data_path", "processed_tracks.parquet")
+LIMIT = config.get("limit", 1000)
+CHUNK_SIZE = config.get("chunk_size", 100_000)
 
+def run_full_etl():
+    """Run the ETL pipeline for all slices."""
+    logger.info("Loading processed data...")
 
-# 1. Load processed playlist-track data
-logger.info("Loading processed data...")
-df = pd.read_csv(PROCESSED_DATA_PATH)
-interactions = df.values.tolist()
+    slice_files = [os.path.join(DATASET_PATH, f) for f in os.listdir(DATASET_PATH) if f.endswith(".json")]
+    # slice_files = [os.path.join(DATASET_PATH, "mpd.slice.0-999.json")]  # For testing, process only the first slice
 
+    with ProcessPoolExecutor() as executor:
+        # Each worker runs: load_tracks(file, save_directory, limit)
+        results = list(executor.map(load_tracks, 
+                                    slice_files, 
+                                    [PROCESSED_DATA_PATH]*len(slice_files), 
+                                    [LIMIT]*len(slice_files)))
 
-# 2. Encode tracks and build interaction matrix
-logger.info("Encoding tracks and building matrix...")
-encoded_interactions, track_to_idx, idx_to_track = encode_tracks(interactions)
-X = build_matrix(encoded_interactions, track_to_idx)
+    logger.info(f"Processed {sum(results)} total tracks across all slices.")
+    logger.info("ETL pipeline finished for all slices")
 
+def run_train():
+    """Placeholder for training logic."""
+    logger.info("Starting training process...")
+    pass
 
-# 3. Train KNN model
-logger.info("Training KNN model...")
-knn_model = train_knn(X.T, n_neighbors=10)
-
-
-# 4. Save artifacts (using pickle)
-artifacts = {
-    "knn_model": knn_model,
-    "track_to_idx": track_to_idx,
-    "idx_to_track": idx_to_track
-}
-with open("knn_artifacts.pkl", "wb") as f:
-    pickle.dump(artifacts, f)
-logger.info("Training complete. Artifacts saved to knn_artifacts.pkl.")
+if __name__ == "__main__":
+    # Benchmark the full ETL pipeline
+    success, duration = benchmark(run_full_etl)
+    if success:
+        logger.info(f"Full ETL pipeline completed successfully in {duration:.2f} seconds")
+    else:
+        logger.error(f"Full ETL pipeline failed after {duration:.2f} seconds")
